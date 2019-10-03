@@ -102,5 +102,8 @@ class App extends React.Component {
   }
 }
 
-const rootElement = document.getElementById("#object-detection");
+const rootElement = document.getElementById("root");
 ReactDOM.render(<App />, rootElement);
+
+const domContainer = document.querySelector('#object-detection');
+ReactDOM.render(<App />,, domContainer);
