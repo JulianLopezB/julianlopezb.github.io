@@ -106,4 +106,4 @@ const rootElement = document.getElementById("root");
 ReactDOM.render(<App />, rootElement);
 
 const domContainer = document.querySelector('#object-detection');
-ReactDOM.render(e(LikeButton), domContainer);
+ReactDOM.render(<App />,, domContainer);
