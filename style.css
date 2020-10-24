@@ -44,13 +44,13 @@ table {
     border-spacing: 0;
 }
 
-#body{
-    font-family: roboto, sans-serif;
+body{
+    font-family: Source Code Pro, sans-serif;
     color: #415161;
 }
 
 p {
-    font-size: 16px;
+    font-size: 18px;
     line-height: 34px;
 }
 
@@ -94,24 +94,28 @@ h1 {
 }
 
 #main {
-    width: 960px;
+    width: 900px;
     margin: 0px auto;
+}
+
+#resume p {
+    font-size: 16px;
 }
 
 #profile {
     
-    height: 240px;
+    height: 200px;
 }
 
 #profile img {
-    height: 240px;
-    border-radius: 50%;
+    height: 180px;
+    border-radius: 70%;
     float: left;
     margin-right: 40px;
 }
 
 #profile p {
-    margin-top: 20px;
+    margin-top: 30px;
 }
 
 .recent-work {
@@ -127,9 +131,11 @@ h1 {
 }
 
 .highlight-proj p {
-    font-size: 16px;
+    font-size: 13px;
+    font-family: Roboto;
     line-height: 26px;
     color: #a0a8b0;
+    font-style: bold
     margin-bottom: 30px;
 }
 
