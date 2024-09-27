@@ -32,7 +32,7 @@ export const SocialFeed: React.FC = () => {
   useEffect(() => {
     const fetchTweets = async () => {
       try {
-        const response = await fetch('/.netlify/functions/getTweets');
+        const response = await fetch('/tweets.json');
         if (!response.ok) {
           throw new Error('Failed to fetch tweets');
         }
