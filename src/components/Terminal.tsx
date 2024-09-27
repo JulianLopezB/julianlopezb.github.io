@@ -5,8 +5,9 @@ import { About } from './About';
 import { ProjectShowcase } from './ProjectShowcase';
 import { Contact } from './Contact';
 import { AIAssistant } from './AIAssistant';
+import { SocialFeed } from './SocialFeed';
 
-type SectionName = 'root' | 'about' | 'experience' | 'projects' | 'contact' | 'ai';
+type SectionName = 'root' | 'about' | 'experience' | 'projects' | 'contact' | 'ai' | 'social';
 
 const TerminalContainer = styled.div`
   background: ${({ theme }) => theme.colors.primary};
@@ -43,12 +44,13 @@ const OutputLine = styled.div`
 `;
 
 const sections: Record<SectionName, string[]> = {
-  root: ['about', 'experience', 'projects', 'contact', 'ai'],
+  root: ['about', 'experience', 'projects', 'contact', 'ai', 'social'],
   about: [],
   experience: [],
   projects: [],
   contact: [],
   ai: [],
+  social: [],
 };
 
 export const Terminal: React.FC = () => {
@@ -59,7 +61,7 @@ export const Terminal: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<SectionName[]>(['root']);
   const [currentView, setCurrentView] = useState<SectionName | null>(null);
 
-  const getCurrentSection = (): SectionName => currentPath[currentPath.length - 1];
+  const getCurrentSection = (): SectionName => currentPath[currentPath.length - 1] || 'root';
 
   const handleCommand = (command: string) => {
     const commandLower = command.toLowerCase().trim();
@@ -82,7 +84,8 @@ export const Terminal: React.FC = () => {
             <br />- cd [directory]: Change directory
             <br />- pwd: Print working directory
             <br />- cat [file]: View contents of a file
-            <br />- clear or cls: Clear the terminal
+            <br />- clear: Clear the terminal
+            <br />- social: View latest social media updates
           </OutputLine>
         );
         break;
@@ -98,11 +101,11 @@ export const Terminal: React.FC = () => {
       case 'cd':
         if (args[0] === '..') {
           if (currentPath.length > 1) {
-            setCurrentPath(prev => prev.slice(0, -1));
+            setCurrentPath(['root']);
             setCurrentView(null);
           }
-        } else if (args[0] && sections[args[0] as SectionName]) {
-          setCurrentPath(prev => [...prev, args[0] as SectionName]);
+        } else if (args[0] && sections.root.includes(args[0])) {
+          setCurrentPath(['root', args[0] as SectionName]);
           setCurrentView(args[0] as SectionName);
         } else {
           newOutput.push(<OutputLine key={output.length + 1}>Directory not found</OutputLine>);
@@ -121,6 +124,9 @@ export const Terminal: React.FC = () => {
       case 'clear':
         setOutput([]);
         return;
+      case 'social':
+        setCurrentView('social');
+        break;
       default:
         newOutput.push(<OutputLine key={output.length + 1}>Command not recognized. Type 'help' for available commands.</OutputLine>);
     }
@@ -149,6 +155,7 @@ export const Terminal: React.FC = () => {
       {currentView === 'projects' && <ProjectShowcase />}
       {currentView === 'contact' && <Contact />}
       {currentView === 'ai' && <AIAssistant />}
+      {currentView === 'social' && <SocialFeed />}
       <form onSubmit={handleSubmit}>
         <InputLine>
           <Prompt>{`${getCurrentSection()}$`}</Prompt>
