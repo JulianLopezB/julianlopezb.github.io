@@ -1,11 +1,8 @@
 import OpenAI from 'openai';
 import { CV_DATA } from './cvData';
 
-// Access the API key from the window.env object
-const apiKey = (window as any).env?.REACT_APP_OPENAI_API_KEY;
-
 const openai = new OpenAI({
-  apiKey: apiKey,
+  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
 });
 
