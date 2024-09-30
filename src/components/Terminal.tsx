@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Experience } from './Experience';
 import { About } from './About';
 import { ProjectShowcase } from './ProjectShowcase';
 import { Contact } from './Contact';
-import { AIAssistant } from './AIAssistant';
 import { SocialFeed } from './SocialFeed';
+import { getAIResponse } from '../utils/aiSetup';
 
-type SectionName = 'root' | 'about' | 'experience' | 'projects' | 'contact' | 'ai' | 'social';
+type SectionName = 'root' | 'about' | 'experience' | 'projects' | 'contact' | 'social';
+
 
 const TerminalContainer = styled.div`
   background: ${({ theme }) => theme.colors.primary};
   color: ${({ theme }) => theme.colors.text};
-  font-family: ${({ theme }) => theme.fonts.code};
-  padding: 1rem;  height: 100%;
+  font-family: ${({ theme }) => theme.fonts.main};
+  padding: 1rem;
+  height: 100%;
   overflow-y: auto;
+  border-radius: 6px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 `;
 
 const InputLine = styled.div`
@@ -34,6 +38,8 @@ const Input = styled.input`
   color: ${({ theme }) => theme.colors.text};
   font-family: inherit;
   font-size: 1rem;
+  caret-color: ${({ theme }) => theme.colors.accent};
+  width: 100%;
   &:focus {
     outline: none;
   }
@@ -41,15 +47,20 @@ const Input = styled.input`
 
 const OutputLine = styled.div`
   margin-bottom: 0.5rem;
+  transition: color 0.3s ease;
+  
+  &:hover {
+    color: ${({ theme }) => theme.colors.accent3};
+    text-shadow: 0 0 5px ${({ theme }) => theme.colors.accent3};
+  }
 `;
 
 const sections: Record<SectionName, string[]> = {
-  root: ['about', 'experience', 'projects', 'contact', 'ai', 'social'],
+  root: ['about', 'experience', 'projects', 'contact', 'social'],
   about: [],
   experience: [],
   projects: [],
   contact: [],
-  ai: [],
   social: [],
 };
 
@@ -60,20 +71,34 @@ export const Terminal: React.FC = () => {
   ]);
   const [currentPath, setCurrentPath] = useState<SectionName[]>(['root']);
   const [currentView, setCurrentView] = useState<SectionName | null>(null);
+  const [isAIActive, setIsAIActive] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const getCurrentSection = (): SectionName => currentPath[currentPath.length - 1] || 'root';
 
-  const handleCommand = (command: string) => {
+  const getCurrentPrompt = (): string => {
+    return `${currentPath.join('/')}$`;
+  };
+
+  const handleCommand = async (command: string) => {
     const commandLower = command.toLowerCase().trim();
     const [cmd, ...args] = commandLower.split(' ');
 
-    if (cmd === 'clear' || cmd === 'cls') {
-      setOutput([]);
-      setCurrentView(null);
+    let newOutput: JSX.Element[] = [...output, <OutputLine key={output.length}>{`${getCurrentPrompt()} ${command}`}</OutputLine>];
+
+    if (isAIActive && cmd !== 'ai') {
+      // If AI is active, treat all non-'ai' commands as questions for the AI
+      try {
+        const aiResponse = await getAIResponse(command);
+        newOutput.push(<OutputLine key={output.length + 1}>AI: {aiResponse}</OutputLine>);
+      } catch (error) {
+        console.error("Error getting AI response:", error);
+        newOutput.push(<OutputLine key={output.length + 1}>AI: Sorry, I encountered an error.</OutputLine>);
+      }
+      setOutput(newOutput);
       return;
     }
-
-    let newOutput: JSX.Element[] = [...output, <OutputLine key={output.length}>{`$ ${command}`}</OutputLine>];
 
     switch (cmd) {
       case 'help':
@@ -86,6 +111,9 @@ export const Terminal: React.FC = () => {
             <br />- cat [file]: View contents of a file
             <br />- clear: Clear the terminal
             <br />- social: View latest social media updates
+            <br />- projects: View project showcase
+            <br />- ai start: Start AI conversation
+            <br />- ai end: End AI conversation
           </OutputLine>
         );
         break;
@@ -121,11 +149,27 @@ export const Terminal: React.FC = () => {
           newOutput.push(<OutputLine key={output.length + 1}>File not found</OutputLine>);
         }
         break;
-      case 'clear':
-        setOutput([]);
-        return;
       case 'social':
         setCurrentView('social');
+        break;
+      case 'projects':
+        setCurrentView('projects');
+        break;
+      case 'ai':
+        if (args[0] === 'start') {
+          setIsAIActive(true);
+          newOutput.push(<OutputLine key={output.length + 1}>AI conversation started. Type 'ai end' to finish.</OutputLine>);
+        } else if (args[0] === 'end') {
+          setIsAIActive(false);
+          newOutput.push(<OutputLine key={output.length + 1}>AI conversation ended.</OutputLine>);
+        } else {
+          newOutput.push(<OutputLine key={output.length + 1}>Invalid AI command. Use 'ai start' or 'ai end'.</OutputLine>);
+        }
+        break;
+      case 'clear':
+      case 'cls':
+        newOutput = [];
+        setCurrentView(null);
         break;
       default:
         newOutput.push(<OutputLine key={output.length + 1}>Command not recognized. Type 'help' for available commands.</OutputLine>);
@@ -147,19 +191,34 @@ export const Terminal: React.FC = () => {
     }
   }, [output]);
 
+  useEffect(() => {
+    // Focus the input when the component mounts
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  const handleContainerClick = () => {
+    // Refocus the input when clicking anywhere in the terminal
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   return (
-    <TerminalContainer id="terminal-container">
+    <TerminalContainer id="terminal-container" ref={containerRef} onClick={handleContainerClick} tabIndex={0}>
+      
       {output}
+      {currentView === 'projects' && <ProjectShowcase />}
       {currentView === 'about' && <About />}
       {currentView === 'experience' && <Experience />}
-      {currentView === 'projects' && <ProjectShowcase />}
       {currentView === 'contact' && <Contact />}
-      {currentView === 'ai' && <AIAssistant />}
       {currentView === 'social' && <SocialFeed />}
       <form onSubmit={handleSubmit}>
         <InputLine>
-          <Prompt>{`${getCurrentSection()}$`}</Prompt>
+          <Prompt>{getCurrentPrompt()}</Prompt>
           <Input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             autoFocus

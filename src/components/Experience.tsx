@@ -1,23 +1,95 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRocket } from '@fortawesome/free-solid-svg-icons';
 
 const ExperienceContainer = styled.div`
-  font-family: 'Courier New', Courier, monospace;
+  font-family: ${({ theme }) => theme.fonts.main};
   color: ${({ theme }) => theme.colors.text};
   padding: 1rem;
+  display: flex;
+  height: 100%;
+`;
+
+const DirectoryList = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 1rem;
+`;
+
+const pulse = keyframes`
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
 `;
 
 const DirectoryLine = styled.div<{ selected: boolean }>`
-  padding: 0.2rem 0;
+  padding: 0.5rem;
   cursor: pointer;
-  background-color: ${({ selected, theme }) => selected ? theme.colors.accent : 'transparent'};
-  color: ${({ selected, theme }) => selected ? theme.colors.background : theme.colors.text};
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  border-left: 2px solid ${({ selected, theme }) => selected ? theme.colors.accent : 'transparent'};
+  background-color: ${({ selected, theme }) => selected ? `${theme.colors.accent}22` : 'transparent'};
+
+  &:hover {
+    background-color: ${({ theme }) => `${theme.colors.accent}11`};
+  }
+
+  ${({ selected }) => selected && css`
+    animation: ${pulse} 2s infinite;
+  `}
+`;
+
+const JobIcon = styled(FontAwesomeIcon)`
+  margin-right: 0.5rem;
+  color: ${({ theme }) => theme.colors.accent};
 `;
 
 const JobDetails = styled.div`
-  margin-top: 1rem;
-  border-top: 1px solid ${({ theme }) => theme.colors.accent};
-  padding-top: 1rem;
+  flex: 2;
+  border-left: 1px solid ${({ theme }) => theme.colors.accent};
+  padding-left: 1rem;
+  overflow-y: auto;
+`;
+
+const JobTitle = styled.h3`
+  color: ${({ theme }) => theme.colors.accent};
+  font-family: ${({ theme }) => theme.fonts.headings};
+  margin-bottom: 0.5rem;
+`;
+
+const JobCompany = styled.p`
+  font-style: italic;
+  margin-bottom: 1rem;
+`;
+
+const JobDescription = styled.ul`
+  list-style-type: none;
+  padding: 0;
+`;
+
+const JobDescriptionItem = styled.li`
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+
+  &:before {
+    content: '▹';
+    color: ${({ theme }) => theme.colors.accent};
+    margin-right: 0.5rem;
+  }
+`;
+
+const SkillTag = styled.span`
+  background-color: ${({ theme }) => `${theme.colors.accent}33`};
+  color: ${({ theme }) => theme.colors.accent};
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+  font-size: 0.8rem;
 `;
 
 const jobs = [
@@ -128,7 +200,6 @@ const jobs = [
 
 export const Experience: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState(0);
-  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -136,10 +207,6 @@ export const Experience: React.FC = () => {
         setSelectedJob(prev => (prev > 0 ? prev - 1 : jobs.length - 1));
       } else if (event.key === 'ArrowDown') {
         setSelectedJob(prev => (prev < jobs.length - 1 ? prev + 1 : 0));
-      } else if (event.key === 'Enter') {
-        setShowDetails(true);
-      } else if (event.key === 'Escape') {
-        setShowDetails(false);
       }
     };
 
@@ -149,29 +216,34 @@ export const Experience: React.FC = () => {
 
   return (
     <ExperienceContainer>
-      <h2>Career Directory</h2>
-      <p>Use arrow keys to navigate, Enter to view details, Esc to go back</p>
-      {jobs.map((job, index) => (
-        <DirectoryLine 
-          key={job.id} 
-          selected={index === selectedJob}
-          onClick={() => setSelectedJob(index)}
-        >
-          {job.id}/
-        </DirectoryLine>
-      ))}
-      {showDetails && (
-        <JobDetails>
-          <h3>{jobs[selectedJob].title}</h3>
-          <p>{jobs[selectedJob].company} ({jobs[selectedJob].period})</p>
-          <ul>
-            {jobs[selectedJob].description.map((desc, index) => (
-              <li key={index}>{desc}</li>
-            ))}
-          </ul>
-          <p>Skills: {jobs[selectedJob].skills.join(', ')}</p>
-        </JobDetails>
-      )}
+      <DirectoryList>
+        <h2>Career Timeline</h2>
+        <p>Use ↑↓ arrows to navigate</p>
+        {jobs.map((job, index) => (
+          <DirectoryLine 
+            key={job.id} 
+            selected={index === selectedJob}
+            onClick={() => setSelectedJob(index)}
+          >
+            <JobIcon icon={faRocket} />
+            {job.company}
+          </DirectoryLine>
+        ))}
+      </DirectoryList>
+      <JobDetails>
+        <JobTitle>{jobs[selectedJob].title}</JobTitle>
+        <JobCompany>{jobs[selectedJob].company} | {jobs[selectedJob].period}</JobCompany>
+        <JobDescription>
+          {jobs[selectedJob].description.map((desc, index) => (
+            <JobDescriptionItem key={index}>{desc}</JobDescriptionItem>
+          ))}
+        </JobDescription>
+        <div style={{ marginTop: '1rem' }}>
+          {jobs[selectedJob].skills.map((skill, index) => (
+            <SkillTag key={index}>{skill}</SkillTag>
+          ))}
+        </div>
+      </JobDetails>
     </ExperienceContainer>
   );
 };
