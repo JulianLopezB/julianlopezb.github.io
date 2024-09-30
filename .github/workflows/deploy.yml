@@ -13,7 +13,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '16'  # or whichever version you're using locally
+          node-version: '18'  # or '20' if you prefer
 
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps
