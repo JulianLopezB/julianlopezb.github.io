@@ -12,6 +12,8 @@ ${CV_DATA}
 
 Please answer questions based on this information. If the information is not in the CV, politely say that you don't have that information.`;
 
+console.log('token', process.env.REACT_APP_OPENAI_API_KEY)
+
 export async function getAIResponse(question: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
