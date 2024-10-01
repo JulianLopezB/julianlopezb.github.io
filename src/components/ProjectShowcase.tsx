@@ -4,10 +4,15 @@ import styled from 'styled-components';
 const ProjectContainer = styled.div`
   font-family: ${({ theme }) => theme.fonts.main};
   color: ${({ theme }) => theme.colors.text};
+  display: flex;
+  height: 100%;
 `;
 
 const ProjectList = styled.div`
-  margin-bottom: 1rem;
+  flex: 0 0 40%;
+  overflow-y: auto;
+  border-right: 1px solid ${({ theme }) => theme.colors.accent};
+  padding-right: 1rem;
 `;
 
 const ProjectLine = styled.div<{ selected: boolean }>`
@@ -23,14 +28,22 @@ const ProjectLine = styled.div<{ selected: boolean }>`
 `;
 
 const ProjectDetails = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.colors.accent};
-  padding-top: 1rem;
+  flex: 1;
+  padding-left: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 `;
 
 const ASCIIArt = styled.pre`
   font-size: 0.6rem;
   line-height: 0.7rem;
   color: ${({ theme }) => theme.colors.accent};
+  margin-bottom: 1rem;
+`;
+
+const ProjectInfo = styled.div`
+  flex: 1;
 `;
 
 const ProjectTitle = styled.h3`
@@ -50,6 +63,12 @@ const ProjectLink = styled.a`
   }
 `;
 
+const NavigationHelp = styled.p`
+  font-size: 0.8rem;
+  margin-top: 1rem;
+  color: ${({ theme }) => theme.colors.text}aa;
+`;
+
 interface Project {
   title: string;
   description: string;
@@ -65,14 +84,17 @@ const projects: Project[] = [
     link: 'https://medium.com/@julianlopezba/enhancing-e-commerce-chatbots-with-openai-apis-custom-functions-a-deep-dive-into-the-dokuso-fa7083df1a35',
     type: 'Article',
     ascii: `
- _____
-/     \\
-/       \\
+   _____
+  /     \\
+ /       \\
 |  ^   ^  |
 |  (o o)  |
 |  ( < )  |
-\\  ---  /
-\\_____/
+ \\  ---  /
+  \\_____/
+ /       \\
+|  SHOP!  |
+ \\_______/
     `
   },
   {
@@ -81,14 +103,16 @@ const projects: Project[] = [
     link: 'https://medium.com/@julianlopezba/automate-e-commerce-scraping-with-github-actions-a7bc707c7402',
     type: 'Article',
     ascii: `
- _________
-/ ======= \\
-/ __________\\
-| ___________ |
-| | -       | |
-| |         | |
-| |_________| |
-\\=____________/
+   _____
+  |     |
+  | WWW |
+ /       \\
+|  $   $  |
+|    >    |
+ \\  ___  /
+  |     |
+  |DATA |
+  |_____|
     `
   },
   {
@@ -97,13 +121,13 @@ const projects: Project[] = [
     link: 'https://julianlopezb.github.io/blog/fastpages/jupyter/2022/07/20/Link-Prediction-Graph-Auto-Encoders-WIP.html',
     type: 'Research',
     ascii: `
-  ___
- /   \\
-/     \\
-/       \\
-|  O---O  |
-\\  ___  /
-\\_____/
+    (o)
+   /   \\
+  (o)-(o)
+ /   X   \\
+(o)-(o)-(o)
+     |
+    (o)
     `
   },
   {
@@ -112,13 +136,10 @@ const projects: Project[] = [
     link: 'https://julianlopezb.github.io/blog/fastpages/jupyter/2022/08/01/Social-Dilemmas-with-Multi-Agent-Reinforcent-Learning-WIP.html',
     type: 'Research',
     ascii: `
- _____
-/     \\
-| () () |
-\\   ^   /
-|UUUUU|
-|     |
-'-----'
+   ___     ___
+  (o o)   (o o)
+ (  V  ) (  V  )
+/--m-m- /--m-m-
     `
   },
   {
@@ -127,12 +148,12 @@ const projects: Project[] = [
     link: 'https://julianlopezbaasch.medium.com/how-to-leverage-gcp-free-tier-to-train-your-custom-object-detection-with-yolov5-c0dde7a3c189',
     type: 'Tutorial',
     ascii: `
-  ____
- /    \\
-| ^  ^ |
-| O  O |
-|  ||  |
- \\____/
+  ________
+ |        |
+ | O    O |
+ |   <>   |
+ |  ____  |
+ |________|
     `
   },
   {
@@ -141,12 +162,15 @@ const projects: Project[] = [
     link: 'https://towardsdatascience.com/mining-twitter-discourse-on-covid19-a2b6df66daee',
     type: 'Data Analysis',
     ascii: `
- /\\___/\\
-(  o o  )
-/   V   \\
-/(  _^_  )\\
- \\  \\|/  /
-  \`-----'
+   _____
+  /      \\
+ |  TWEET |
+ |   19   |
+  \\______/
+     ||
+   \\    /
+    \\  /
+     \\/
     `
   },
 ];
@@ -171,9 +195,8 @@ export const ProjectShowcase: React.FC = () => {
 
   return (
     <ProjectContainer>
-      <h2>Projects</h2>
-      <p>Use ↑↓ arrows to navigate, Enter to open project link</p>
       <ProjectList>
+        <h2>Projects</h2>
         {projects.map((project, index) => (
           <ProjectLine 
             key={index} 
@@ -183,14 +206,19 @@ export const ProjectShowcase: React.FC = () => {
             {project.title} - {project.type}
           </ProjectLine>
         ))}
+        <NavigationHelp>
+          Use ↑↓ arrows to navigate, Enter to open project link
+        </NavigationHelp>
       </ProjectList>
       <ProjectDetails>
         <ASCIIArt>{projects[selectedProject].ascii}</ASCIIArt>
-        <ProjectTitle>{projects[selectedProject].title}</ProjectTitle>
-        <ProjectDescription>{projects[selectedProject].description}</ProjectDescription>
-        <ProjectLink href={projects[selectedProject].link} target="_blank" rel="noopener noreferrer">
-          View Project
-        </ProjectLink>
+        <ProjectInfo>
+          <ProjectTitle>{projects[selectedProject].title}</ProjectTitle>
+          <ProjectDescription>{projects[selectedProject].description}</ProjectDescription>
+          <ProjectLink href={projects[selectedProject].link} target="_blank" rel="noopener noreferrer">
+            View Project
+          </ProjectLink>
+        </ProjectInfo>
       </ProjectDetails>
     </ProjectContainer>
   );
