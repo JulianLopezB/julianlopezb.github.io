@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 
 const ProjectContainer = styled.div`
@@ -6,6 +6,12 @@ const ProjectContainer = styled.div`
   color: ${({ theme }) => theme.colors.text};
   display: flex;
   height: 100%;
+  outline: none; // Remove the default focus outline
+  border: 0px solid transparent; // Add a transparent border
+  
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.accent}33; // Semi-transparent accent color when focused
+  }
 `;
 
 const ProjectList = styled.div`
@@ -175,26 +181,41 @@ const projects: Project[] = [
   },
 ];
 
-export const ProjectShowcase: React.FC = () => {
+export const ProjectShowcase: React.FC<{ onTabPress: () => void }> = ({ onTabPress }) => {
   const [selectedProject, setSelectedProject] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowUp') {
-        setSelectedProject(prev => (prev > 0 ? prev - 1 : projects.length - 1));
-      } else if (event.key === 'ArrowDown') {
-        setSelectedProject(prev => (prev < projects.length - 1 ? prev + 1 : 0));
-      } else if (event.key === 'Enter') {
-        window.open(projects[selectedProject].link, '_blank');
+      if (document.activeElement === containerRef.current) {
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          setSelectedProject(prev => (prev > 0 ? prev - 1 : projects.length - 1));
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          setSelectedProject(prev => (prev < projects.length - 1 ? prev + 1 : 0));
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          window.open(projects[selectedProject].link, '_blank');
+        } else if (event.key === 'Tab') {
+          event.preventDefault();
+          onTabPress();
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedProject]);
+  }, [selectedProject, onTabPress]);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.focus();
+    }
+  }, []);
 
   return (
-    <ProjectContainer>
+    <ProjectContainer ref={containerRef} tabIndex={0}>
       <ProjectList>
         <h2>Projects</h2>
         {projects.map((project, index) => (
@@ -207,7 +228,7 @@ export const ProjectShowcase: React.FC = () => {
           </ProjectLine>
         ))}
         <NavigationHelp>
-          Use ↑↓ arrows to navigate, Enter to open project link
+          Use ↑↓ arrows to navigate, Enter to open project link, Tab to exit
         </NavigationHelp>
       </ProjectList>
       <ProjectDetails>

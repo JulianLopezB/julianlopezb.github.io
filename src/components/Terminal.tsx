@@ -98,11 +98,67 @@ export const Terminal: React.FC = () => {
   const [isAIActive, setIsAIActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant' | 'system'; content: string }[]>([]);
+  const [isAIResponding, setIsAIResponding] = useState(false);
 
   const getCurrentSection = (): SectionName => currentPath[currentPath.length - 1] || 'root';
 
   const getCurrentPrompt = (): string => {
     return `${currentPath.join('/')}$`;
+  };
+
+  const handleAIResponse = async (userInput: string, continueResponse: boolean = false) => {
+    setIsAIResponding(true);
+    let newOutput: JSX.Element[] = [...output];
+
+    if (!continueResponse) {
+      newOutput.push(
+        <AIOutputLine key={output.length + 1}>
+          <UserIcon>
+            <FontAwesomeIcon icon={faUser} />
+          </UserIcon>
+          <AIContent>{userInput}</AIContent>
+        </AIOutputLine>
+      );
+      setAiMessages([...aiMessages, { role: "user", content: userInput }]);
+    }
+
+    try {
+      const { content, isComplete } = await getAIResponse(userInput, aiMessages);
+      setAiMessages([...aiMessages, { role: "assistant", content }]);
+
+      newOutput.push(
+        <AIOutputLine key={output.length + 2}>
+          <AIIcon>
+            <FontAwesomeIcon icon={faRobot} />
+          </AIIcon>
+          <AIContent>{content}</AIContent>
+        </AIOutputLine>
+      );
+
+      if (!isComplete) {
+        newOutput.push(
+          <OutputLine key={output.length + 3}>
+            The AI response was truncated. Type 'continue' to get the rest of the response.
+          </OutputLine>
+        );
+      }
+
+      setOutput(newOutput);
+    } catch (error) {
+      console.error("Error getting AI response:", error);
+      newOutput.push(
+        <AIOutputLine key={output.length + 2}>
+          <AIIcon>
+            <FontAwesomeIcon icon={faRobot} />
+          </AIIcon>
+          <AIContent>Sorry, I encountered an error.</AIContent>
+        </AIOutputLine>
+      );
+      setOutput(newOutput);
+    } finally {
+      setIsAIResponding(false);
+    }
   };
 
   const handleCommand = async (command: string) => {
@@ -111,113 +167,93 @@ export const Terminal: React.FC = () => {
 
     let newOutput: JSX.Element[] = [...output, <OutputLine key={output.length}>{`${getCurrentPrompt()} ${command}`}</OutputLine>];
 
-    if (isAIActive && cmd !== 'ai') {
-      newOutput.push(
-        <AIOutputLine key={output.length + 1}>
-          <UserIcon>
-            <FontAwesomeIcon icon={faUser} />
-          </UserIcon>
-          <AIContent>{command}</AIContent>
-        </AIOutputLine>
-      );
-      try {
-        const aiResponse = await getAIResponse(command);
-        newOutput.push(
-          <AIOutputLine key={output.length + 2}>
-            <AIIcon>
-              <FontAwesomeIcon icon={faRobot} />
-            </AIIcon>
-            <AIContent>{aiResponse}</AIContent>
-          </AIOutputLine>
-        );
-      } catch (error) {
-        console.error("Error getting AI response:", error);
-        newOutput.push(
-          <AIOutputLine key={output.length + 2}>
-            <AIIcon>
-              <FontAwesomeIcon icon={faRobot} />
-            </AIIcon>
-            <AIContent>Sorry, I encountered an error.</AIContent>
-          </AIOutputLine>
-        );
+    if (isAIActive) {
+      if (cmd === 'ai' && args[0] === 'end') {
+        setIsAIActive(false);
+        setAiMessages([]);
+        newOutput.push(<OutputLine key={output.length + 1}>AI conversation ended.</OutputLine>);
+      } else if (cmd === 'continue' && !isAIResponding) {
+        await handleAIResponse(command, true);
+        return;
+      } else {
+        await handleAIResponse(command);
+        return;
       }
-      setOutput(newOutput);
-      return;
-    }
-
-    switch (cmd) {
-      case 'help':
-        newOutput.push(
-          <OutputLine key={output.length + 1}>
-            Available commands:
-            <br />- ls: List contents of current directory
-            <br />- cd [directory]: Change directory
-            <br />- pwd: Print working directory
-            <br />- cat [file]: View contents of a file
-            <br />- clear: Clear the terminal
-            <br />- social: View latest social media updates
-            <br />- projects: View project showcase
-            <br />- ai start: Start AI conversation
-            <br />- ai end: End AI conversation
-          </OutputLine>
-        );
-        break;
-      case 'ls':
-        const currentSection = getCurrentSection();
-        const contents = sections[currentSection as keyof typeof sections] || [];
-        newOutput.push(
-          <OutputLine key={output.length + 1}>
-            {contents.join('  ')}
-          </OutputLine>
-        );
-        break;
-      case 'cd':
-        if (args[0] === '..') {
-          if (currentPath.length > 1) {
-            setCurrentPath(['root']);
-            setCurrentView(null);
+    } else {
+      switch (cmd) {
+        case 'help':
+          newOutput.push(
+            <OutputLine key={output.length + 1}>
+              Available commands:
+              <br />- ls: List contents of current directory
+              <br />- cd [directory]: Change directory
+              <br />- pwd: Print working directory
+              <br />- cat [file]: View contents of a file
+              <br />- clear: Clear the terminal
+              <br />- social: View latest social media updates
+              <br />- projects: View project showcase
+              <br />- ai start: Start AI conversation
+              <br />- ai end: End AI conversation
+            </OutputLine>
+          );
+          break;
+        case 'ls':
+          const currentSection = getCurrentSection();
+          const contents = sections[currentSection as keyof typeof sections] || [];
+          newOutput.push(
+            <OutputLine key={output.length + 1}>
+              {contents.join('  ')}
+            </OutputLine>
+          );
+          break;
+        case 'cd':
+          if (args[0] === '..') {
+            if (currentPath.length > 1) {
+              setCurrentPath(['root']);
+              setCurrentView(null);
+            }
+          } else if (args[0] && sections.root.includes(args[0])) {
+            setCurrentPath(['root', args[0] as SectionName]);
+            setCurrentView(args[0] as SectionName);
+          } else {
+            newOutput.push(<OutputLine key={output.length + 1}>Directory not found</OutputLine>);
           }
-        } else if (args[0] && sections.root.includes(args[0])) {
-          setCurrentPath(['root', args[0] as SectionName]);
-          setCurrentView(args[0] as SectionName);
-        } else {
-          newOutput.push(<OutputLine key={output.length + 1}>Directory not found</OutputLine>);
-        }
-        break;
-      case 'pwd':
-        newOutput.push(<OutputLine key={output.length + 1}>{`/${currentPath.join('/')}`}</OutputLine>);
-        break;
-      case 'cat':
-        if (args[0] && sections[getCurrentSection()].includes(args[0])) {
-          setCurrentView(args[0] as SectionName);
-        } else {
-          newOutput.push(<OutputLine key={output.length + 1}>File not found</OutputLine>);
-        }
-        break;
-      case 'social':
-        setCurrentView('social');
-        break;
-      case 'projects':
-        setCurrentView('projects');
-        break;
-      case 'ai':
-        if (args[0] === 'start') {
-          setIsAIActive(true);
-          newOutput.push(<OutputLine key={output.length + 1}>AI conversation started. Type 'ai end' to finish.</OutputLine>);
-        } else if (args[0] === 'end') {
-          setIsAIActive(false);
-          newOutput.push(<OutputLine key={output.length + 1}>AI conversation ended.</OutputLine>);
-        } else {
-          newOutput.push(<OutputLine key={output.length + 1}>Invalid AI command. Use 'ai start' or 'ai end'.</OutputLine>);
-        }
-        break;
-      case 'clear':
-      case 'cls':
-        newOutput = [];
-        setCurrentView(null);
-        break;
-      default:
-        newOutput.push(<OutputLine key={output.length + 1}>Command not recognized. Type 'help' for available commands.</OutputLine>);
+          break;
+        case 'pwd':
+          newOutput.push(<OutputLine key={output.length + 1}>{`/${currentPath.join('/')}`}</OutputLine>);
+          break;
+        case 'cat':
+          if (args[0] && sections[getCurrentSection()].includes(args[0])) {
+            setCurrentView(args[0] as SectionName);
+          } else {
+            newOutput.push(<OutputLine key={output.length + 1}>File not found</OutputLine>);
+          }
+          break;
+        case 'social':
+          setCurrentView('social');
+          break;
+        case 'projects':
+          setCurrentView('projects');
+          break;
+        case 'ai':
+          if (args[0] === 'start') {
+            setIsAIActive(true);
+            newOutput.push(<OutputLine key={output.length + 1}>AI conversation started. Type 'ai end' to finish.</OutputLine>);
+          } else if (args[0] === 'end') {
+            setIsAIActive(false);
+            newOutput.push(<OutputLine key={output.length + 1}>AI conversation ended.</OutputLine>);
+          } else {
+            newOutput.push(<OutputLine key={output.length + 1}>Invalid AI command. Use 'ai start' or 'ai end'.</OutputLine>);
+          }
+          break;
+        case 'clear':
+        case 'cls':
+          newOutput = [];
+          setCurrentView(null);
+          break;
+        default:
+          newOutput.push(<OutputLine key={output.length + 1}>Command not recognized. Type 'help' for available commands.</OutputLine>);
+      }
     }
 
     setOutput(newOutput);
@@ -250,11 +286,17 @@ export const Terminal: React.FC = () => {
     }
   };
 
+  const handleTabPress = () => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   return (
     <TerminalContainer id="terminal-container" ref={containerRef} onClick={handleContainerClick} tabIndex={0}>
       
       {output}
-      {currentView === 'projects' && <ProjectShowcase />}
+      {currentView === 'projects' && <ProjectShowcase onTabPress={handleTabPress} />}
       {currentView === 'about' && <About />}
       {currentView === 'experience' && <Experience />}
       {currentView === 'contact' && <Contact />}
