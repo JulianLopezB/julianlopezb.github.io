@@ -12,20 +12,25 @@ ${CV_DATA}
 
 Please answer questions based on this information. If the information is not in the CV, politely say that you don't have that information.`;
 
-export async function getAIResponse(question: string): Promise<string> {
+export async function getAIResponse(question: string, previousMessages: { role: 'user' | 'assistant' | 'system'; content: string }[] = []): Promise<{ content: string; isComplete: boolean }> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo-16k", // Using a model with larger context
+      model: "gpt-3.5-turbo-16k",
       messages: [
         { role: "system", content: SYSTEM_MESSAGE },
+        ...previousMessages,
         { role: "user", content: question }
-      ],
-      max_tokens: 300 // Increased for more detailed responses
+      ] as OpenAI.Chat.ChatCompletionMessageParam[],
+      max_tokens: 1000,
+      temperature: 0.7,
     });
 
-    return response.choices[0].message.content || "Sorry, I couldn't generate a response.";
+    const content = response.choices[0].message.content || "Sorry, I couldn't generate a response.";
+    const isComplete = !response.choices[0].finish_reason || response.choices[0].finish_reason === 'stop';
+
+    return { content, isComplete };
   } catch (error) {
     console.error("Error getting AI response:", error);
-    return "Sorry, I encountered an error while processing your request.";
+    return { content: "Sorry, I encountered an error while processing your request.", isComplete: true };
   }
 }

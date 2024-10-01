@@ -95,8 +95,8 @@ export const AIAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const aiResponse = await getAIResponse(userInput);
-      setConversation(prev => [...prev, { role: 'ai', content: aiResponse }]);
+      const { content } = await getAIResponse(userInput);
+      setConversation(prev => [...prev, { role: 'ai', content }]);
     } catch (error) {
       console.error("Error getting AI response:", error);
       setConversation(prev => [...prev, { role: 'ai', content: "Sorry, I encountered an error." }]);
