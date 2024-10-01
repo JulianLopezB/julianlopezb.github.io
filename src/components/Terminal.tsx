@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUser, faRobot } from '@fortawesome/free-solid-svg-icons';
 import { Experience } from './Experience';
 import { About } from './About';
 import { ProjectShowcase } from './ProjectShowcase';
@@ -55,6 +57,28 @@ const OutputLine = styled.div`
   }
 `;
 
+const AIOutputLine = styled(OutputLine)`
+  background-color: ${({ theme }) => theme.colors.aiBackground};
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+`;
+
+const AIIcon = styled.span`
+  margin-right: 0.5rem;
+  color: ${({ theme }) => theme.colors.accent};
+`;
+
+const AIContent = styled.span`
+  flex: 1;
+`;
+
+const UserIcon = styled(AIIcon)`
+  color: ${({ theme }) => theme.colors.userIcon};
+`;
+
 const sections: Record<SectionName, string[]> = {
   root: ['about', 'experience', 'projects', 'contact', 'social'],
   about: [],
@@ -72,6 +96,7 @@ export const Terminal: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<SectionName[]>(['root']);
   const [currentView, setCurrentView] = useState<SectionName | null>(null);
   const [isAIActive, setIsAIActive] = useState(false);
+  const [aiConversation, setAiConversation] = useState<{ role: 'user' | 'ai'; content: string }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -88,13 +113,34 @@ export const Terminal: React.FC = () => {
     let newOutput: JSX.Element[] = [...output, <OutputLine key={output.length}>{`${getCurrentPrompt()} ${command}`}</OutputLine>];
 
     if (isAIActive && cmd !== 'ai') {
-      // If AI is active, treat all non-'ai' commands as questions for the AI
+      newOutput.push(
+        <AIOutputLine key={output.length + 1}>
+          <UserIcon>
+            <FontAwesomeIcon icon={faUser} />
+          </UserIcon>
+          <AIContent>{command}</AIContent>
+        </AIOutputLine>
+      );
       try {
         const aiResponse = await getAIResponse(command);
-        newOutput.push(<OutputLine key={output.length + 1}>AI: {aiResponse}</OutputLine>);
+        newOutput.push(
+          <AIOutputLine key={output.length + 2}>
+            <AIIcon>
+              <FontAwesomeIcon icon={faRobot} />
+            </AIIcon>
+            <AIContent>{aiResponse}</AIContent>
+          </AIOutputLine>
+        );
       } catch (error) {
         console.error("Error getting AI response:", error);
-        newOutput.push(<OutputLine key={output.length + 1}>AI: Sorry, I encountered an error.</OutputLine>);
+        newOutput.push(
+          <AIOutputLine key={output.length + 2}>
+            <AIIcon>
+              <FontAwesomeIcon icon={faRobot} />
+            </AIIcon>
+            <AIContent>Sorry, I encountered an error.</AIContent>
+          </AIOutputLine>
+        );
       }
       setOutput(newOutput);
       return;
@@ -161,6 +207,7 @@ export const Terminal: React.FC = () => {
           newOutput.push(<OutputLine key={output.length + 1}>AI conversation started. Type 'ai end' to finish.</OutputLine>);
         } else if (args[0] === 'end') {
           setIsAIActive(false);
+          setAiConversation([]);
           newOutput.push(<OutputLine key={output.length + 1}>AI conversation ended.</OutputLine>);
         } else {
           newOutput.push(<OutputLine key={output.length + 1}>Invalid AI command. Use 'ai start' or 'ai end'.</OutputLine>);
@@ -216,7 +263,7 @@ export const Terminal: React.FC = () => {
       {currentView === 'social' && <SocialFeed />}
       <form onSubmit={handleSubmit}>
         <InputLine>
-          <Prompt>{getCurrentPrompt()}</Prompt>
+          <Prompt>{isAIActive ? 'AI>' : getCurrentPrompt()}</Prompt>
           <Input
             ref={inputRef}
             value={input}
