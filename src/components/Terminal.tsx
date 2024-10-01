@@ -63,7 +63,7 @@ const AIOutputLine = styled(OutputLine)`
   padding: 0.5rem;
   margin-bottom: 0.5rem;
   display: flex;
-  align-items: flex-start;
+  align-items: flex-start;aiConversation
 `;
 
 const AIIcon = styled.span`
@@ -96,7 +96,6 @@ export const Terminal: React.FC = () => {
   const [currentPath, setCurrentPath] = useState<SectionName[]>(['root']);
   const [currentView, setCurrentView] = useState<SectionName | null>(null);
   const [isAIActive, setIsAIActive] = useState(false);
-  const [aiConversation, setAiConversation] = useState<{ role: 'user' | 'ai'; content: string }[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -207,7 +206,6 @@ export const Terminal: React.FC = () => {
           newOutput.push(<OutputLine key={output.length + 1}>AI conversation started. Type 'ai end' to finish.</OutputLine>);
         } else if (args[0] === 'end') {
           setIsAIActive(false);
-          setAiConversation([]);
           newOutput.push(<OutputLine key={output.length + 1}>AI conversation ended.</OutputLine>);
         } else {
           newOutput.push(<OutputLine key={output.length + 1}>Invalid AI command. Use 'ai start' or 'ai end'.</OutputLine>);
